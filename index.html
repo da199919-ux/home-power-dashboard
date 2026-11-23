@@ -174,7 +174,19 @@
 </div>
 
 <script type="module">
-import { snapshot } from './data.js';
+import { snapshot as bundled } from './data.js';
+
+// 每日 23:50 由試算表的 Apps Script（dashRefreshSnapshot）更新；讀不到時退回 data.js
+const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycby5QTVMbTYasAZi7cB_GKAEs7u6MSPEtxzaaPnrsWwmO7RVNAu9VnoEG3sjE1gtlG5ylg/exec';
+let snapshot = bundled;
+async function loadDailySnapshot() {
+  try {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 10000);
+    const j = await fetch(SNAPSHOT_URL, { signal:ctrl.signal, credentials:'omit' }).then(r => r.ok ? r.json() : null);
+    clearTimeout(t);
+    if (j && j.latest && Array.isArray(j.daily) && Array.isArray(j.curve)) snapshot = j;
+  } catch {}
+}
 
 const SHEET_ID = '1jhZCx9M8pv0hewr7k7Vrh0R_qrxpqztrH9mTusxYUhE';
 const FIREBASE = { apiKey:'AIzaSyBjQwfHCw1v6ZkW0w0M-zyo17ANAuFY1IU', authDomain:'html-tool-hub.firebaseapp.com', projectId:'html-tool-hub', appId:'1:42179940085:web:4e9cc9bd9b278abdf0ffbc' };
@@ -298,7 +310,7 @@ $('#disconnect').onclick = async () => {
   try { const { a, auth } = await firebase(); await a.signOut(auth); } catch {}
   data = fromSnapshot(snapshot); render();
   $('#connect').hidden = false; $('#refresh').hidden = true; $('#disconnect').hidden = true;
-  $('#msg').textContent = '已中斷連線，目前顯示離線快照。';
+  $('#msg').textContent = `已中斷連線，目前顯示每日快照（${snapshot.generatedAt}）。`;
 };
 
 /* ---------- 畫面 ---------- */
@@ -340,7 +352,7 @@ function render() {
 
   $('#foot').textContent = mode === 'live'
     ? `即時資料來自 Google 試算表「家庭管家_用電」。Worker ${L.worker || '—'} · Tuya ${L.tuya || '—'} · Growatt ${L.growatt || '—'}${L.error ? ' · 錯誤：' + L.error : ''}`
-    : `離線快照（${snapshot.generatedAt}）。按「以 Google 連線即時資料」並用有試算表權限的帳號登入，即可讀取最新資料。`;
+    : `每日快照（${snapshot.generatedAt} 產生，每天 23:50 自動更新）。按「以 Google 連線即時資料」並用有試算表權限的帳號登入，即可讀取最新資料。`;
   drawCurve(); drawDaily();
 }
 
@@ -431,6 +443,9 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { 
 data = fromSnapshot(snapshot);
 render();
 if (savedToken()) goLive(false);
+loadDailySnapshot().then(() => {
+  if (snapshot !== bundled && data.mode !== 'live') { data = fromSnapshot(snapshot); render(); $('#msg').textContent = `目前顯示每日快照（${snapshot.generatedAt}）。`; }
+});
 </script>
 </body>
 </html>
