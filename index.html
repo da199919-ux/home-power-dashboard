@@ -35,7 +35,7 @@
   }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.6; }
-  .wrap { max-width:1080px; margin:0 auto; padding-block:32px 56px;
+  .wrap { max-width:1120px; margin:0 auto; padding-block:32px 56px;
     padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px));
     display:grid; gap:28px; }
   .back { font-size:13px; color:var(--muted); text-decoration:none; }
@@ -47,29 +47,43 @@
   .meta div { padding:8px 16px; border-bottom:1px solid var(--line); display:grid; gap:2px; }
   .meta div:last-child { border-bottom:0; }
   .label, .meta dt { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-family:var(--font-mono); }
+  .label { text-transform:none; letter-spacing:.06em; }
   .meta dd { margin:0; font-family:var(--font-mono); font-weight:500; font-variant-numeric:tabular-nums; }
   .bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
   button { font:inherit; font-size:14px; padding:9px 16px; border:1px solid var(--line); background:var(--panel); color:var(--ink); cursor:pointer; }
   button.primary { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:700; }
   button:hover { filter:brightness(1.06); }
   button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-  button:disabled { opacity:.5; cursor:not-allowed; }
   #msg { font-size:13px; color:var(--muted); }
   .dot { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500; white-space:nowrap; }
   .dot::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
-  .ok { color:var(--live); } .warn { color:var(--warn); } .bad { color:var(--bad); }
+  .ok { color:var(--live); } .warn { color:var(--warn); } .bad { color:var(--bad); } .mute { color:var(--muted); }
   section { display:grid; gap:12px; }
   section > h2 { margin:0; font-size:17px; font-weight:700; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
   .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; }
   .kpi { background:var(--panel); border:1px solid var(--line); padding:12px 16px 14px; display:grid; gap:2px; min-width:0; }
   .kpi .v { font-size:30px; font-weight:700; line-height:1.2; }
-  .kpi .v small { font-size:14px; font-weight:500; color:var(--muted); margin-left:4px; }
+  .kpi .v small, .fstat .v small { font-size:13px; font-weight:500; color:var(--muted); margin-left:4px; }
   .kpi .sub { font-size:12px; color:var(--muted); }
   .panel { background:var(--panel); border:1px solid var(--line); padding:14px 16px 12px; min-width:0; position:relative; }
-  .legend { display:flex; gap:16px; flex-wrap:wrap; font-size:13px; color:var(--muted); margin-bottom:6px; }
+  .pair { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .floor { display:grid; gap:12px; align-content:start; }
+  .floor-head { display:flex; justify-content:space-between; align-items:center; gap:10px; border-bottom:2px solid var(--ink); padding-bottom:6px; }
+  .floor-head h3 { margin:0; font-size:22px; font-weight:900; letter-spacing:.04em; }
+  .fgroup .label { display:block; margin-bottom:4px; }
+  .fstats { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); }
+  .fstat { background:var(--panel); padding:8px 10px; display:grid; gap:0; min-width:0; }
+  .fstat .k { font-size:12px; color:var(--muted); }
+  .fstat .v { font-size:22px; font-weight:700; line-height:1.3; }
+  .fnote { font-size:12px; color:var(--muted); margin:0; }
+  .share { display:grid; gap:4px; font-size:12px; color:var(--muted); }
+  .share .track { height:10px; background:var(--chip); border-radius:0 4px 4px 0; overflow:hidden; }
+  .share .fill { height:100%; background:var(--s-load); border-radius:0 4px 4px 0; }
+  .panel h3 { margin:0 0 4px; font-size:15px; font-weight:700; }
+  .legend { display:flex; gap:16px; flex-wrap:wrap; font-size:13px; color:var(--muted); }
   .legend span { display:inline-flex; align-items:center; gap:6px; }
   .legend i { width:12px; height:12px; border-radius:3px; display:inline-block; }
-  .chart { width:100%; height:280px; display:block; }
+  .chart { width:100%; height:230px; display:block; }
   .chart text { font-family:var(--font-mono); font-size:11px; fill:var(--muted); }
   .tip { position:absolute; pointer-events:none; background:var(--panel); border:1px solid var(--line); box-shadow:0 4px 14px rgba(0,0,0,.12);
     padding:8px 10px; font-size:12px; line-height:1.5; min-width:150px; z-index:5; display:none; }
@@ -78,24 +92,23 @@
   .tip .row span:first-child { display:inline-flex; align-items:center; gap:6px; color:var(--muted); }
   .tip i { width:8px; height:8px; border-radius:2px; display:inline-block; }
   .num { font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
-  .two { display:grid; grid-template-columns:1.4fr 1fr; gap:12px; }
   .apps { display:grid; gap:10px; }
   .app { display:grid; grid-template-columns:84px 1fr auto; gap:10px; align-items:center; font-size:14px; }
   .app .track { height:10px; background:var(--chip); border-radius:0 4px 4px 0; overflow:hidden; }
   .app .fill { height:100%; background:var(--s-load); border-radius:0 4px 4px 0; }
   .app .val { font-size:12px; color:var(--muted); text-align:right; min-width:120px; }
   .app .on { color:var(--ink); font-weight:500; }
-  .split { display:grid; gap:12px; }
-  .split .rowv { display:flex; justify-content:space-between; font-size:14px; }
   details summary { cursor:pointer; font-weight:700; font-size:15px; }
   .tablewrap { overflow-x:auto; margin-top:10px; }
   table { border-collapse:collapse; width:100%; font-size:13px; white-space:nowrap; }
   th, td { padding:6px 10px; border-bottom:1px solid var(--line); text-align:right; }
   th:first-child, td:first-child, th:last-child, td:last-child { text-align:left; }
+  thead tr:first-child th { text-align:center; color:var(--ink); font-weight:700; border-bottom:0; }
+  th.sep, td.sep { border-left:1px solid var(--line); }
   th { font-weight:500; color:var(--muted); font-size:12px; }
   td { font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
   .note { font-size:12px; color:var(--muted); margin:0; }
-  @media (max-width:760px) { .two { grid-template-columns:1fr; } }
+  @media (max-width:760px) { .pair { grid-template-columns:1fr; } }
   @media (max-width:600px) {
     .titleblock { grid-template-columns:1fr; }
     .titleblock h1 { border-right:0; border-bottom:2px solid var(--ink); }
@@ -103,7 +116,8 @@
     .meta div { border-bottom:0; border-right:1px solid var(--line); padding:8px 10px; }
     .meta div:last-child { border-right:0; }
     .meta dd { font-size:12px; }
-    .chart { height:230px; }
+    .chart { height:210px; }
+    .fstat .v { font-size:19px; }
     .app { grid-template-columns:70px 1fr; }
     .app .val { grid-column:1 / -1; text-align:left; }
   }
@@ -130,42 +144,44 @@
   </div>
 
   <section>
-    <h2>現在 <span class="label" id="now-label">NOW</span></h2>
+    <h2>全屋 <span class="label" id="now-label">NOW</span></h2>
     <div class="kpis" id="kpis"></div>
   </section>
 
   <section>
-    <h2>近 48 小時負載與太陽能 <span class="label">15 分鐘平均 · W</span></h2>
-    <div class="panel" id="p-curve">
-      <div class="legend"><span><i style="background:var(--s-load)"></i>全屋負載</span><span><i style="background:var(--s-solar)"></i>太陽能發電</span></div>
-      <svg class="chart" id="c-curve" role="img" aria-label="近 48 小時全屋負載與太陽能發電折線圖"></svg>
-      <div class="tip" id="t-curve"></div>
+    <h2>一樓 / 樓上 <span class="label">各自的電表與太陽能</span></h2>
+    <div class="pair">
+      <div class="panel floor" id="floor-0"></div>
+      <div class="panel floor" id="floor-1"></div>
     </div>
   </section>
 
   <section>
-    <h2>每日電量 <span class="label">kWh</span></h2>
-    <div class="panel" id="p-daily">
-      <div class="legend"><span><i style="background:var(--s-load)"></i>全屋購電</span><span><i style="background:var(--s-solar)"></i>太陽能發電</span><span><i style="background:var(--s-sell)"></i>售電</span></div>
-      <svg class="chart" id="c-daily" role="img" aria-label="每日購電、太陽能發電與售電長條圖"></svg>
-      <div class="tip" id="t-daily"></div>
+    <h2>近 48 小時負載與太陽能 <span class="label">15 分鐘平均 · W · 兩層同一刻度</span></h2>
+    <div class="legend"><span><i style="background:var(--s-load)"></i>樓層負載（市電＋太陽能）</span><span><i style="background:var(--s-solar)"></i>太陽能發電</span></div>
+    <div class="pair">
+      <div class="panel" id="p-curve-0"><h3>一樓</h3><svg class="chart" id="c-curve-0" role="img" aria-label="一樓近 48 小時負載與太陽能折線圖"></svg><div class="tip" id="t-curve-0"></div></div>
+      <div class="panel" id="p-curve-1"><h3>樓上</h3><svg class="chart" id="c-curve-1" role="img" aria-label="樓上近 48 小時負載與太陽能折線圖"></svg><div class="tip" id="t-curve-1"></div></div>
     </div>
   </section>
 
-  <div class="two">
-    <section>
-      <h2>電器 <span class="label">今日用電 kWh · 即時功率</span></h2>
-      <div class="panel"><div class="apps" id="apps"></div></div>
-    </section>
-    <section>
-      <h2>一樓 / 樓上 <span class="label">今日購電</span></h2>
-      <div class="panel split" id="floors"></div>
-    </section>
-  </div>
+  <section>
+    <h2>每日電量 <span class="label">kWh · 兩層同一刻度</span></h2>
+    <div class="legend"><span><i style="background:var(--s-load)"></i>購電</span><span><i style="background:var(--s-solar)"></i>太陽能發電</span><span><i style="background:var(--s-sell)"></i>售電</span></div>
+    <div class="pair">
+      <div class="panel" id="p-daily-0"><h3>一樓</h3><svg class="chart" id="c-daily-0" role="img" aria-label="一樓每日購電、太陽能與售電長條圖"></svg><div class="tip" id="t-daily-0"></div></div>
+      <div class="panel" id="p-daily-1"><h3>樓上</h3><svg class="chart" id="c-daily-1" role="img" aria-label="樓上每日購電、太陽能與售電長條圖"></svg><div class="tip" id="t-daily-1"></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>電器 <span class="label">插座計量 · 今日 kWh · 即時功率 · 未標示樓層</span></h2>
+    <div class="panel"><div class="apps" id="apps"></div></div>
+  </section>
 
   <section class="panel">
     <details>
-      <summary>每日彙總表</summary>
+      <summary>每日彙總表（分樓層）</summary>
       <div class="tablewrap"><table id="table"></table></div>
     </details>
   </section>
@@ -178,7 +194,18 @@ import { snapshot as bundled } from './data.js';
 
 // 每日 23:50 由試算表的 Apps Script（dashRefreshSnapshot）更新；讀不到時退回 data.js
 const SNAPSHOT_URL = 'https://script.google.com/macros/s/AKfycby5QTVMbTYasAZi7cB_GKAEs7u6MSPEtxzaaPnrsWwmO7RVNAu9VnoEG3sjE1gtlG5ylg/exec';
-let snapshot = bundled;
+const SHEET_ID = '1jhZCx9M8pv0hewr7k7Vrh0R_qrxpqztrH9mTusxYUhE';
+const FIREBASE = { apiKey:'AIzaSyBjQwfHCw1v6ZkW0w0M-zyo17ANAuFY1IU', authDomain:'html-tool-hub.firebaseapp.com', projectId:'html-tool-hub', appId:'1:42179940085:web:4e9cc9bd9b278abdf0ffbc' };
+const SCOPE = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+const APPS = ['熱水器','咖啡機','飲水機','廚房熱水器','門口燈','除濕機'];
+const FLOORS = ['一樓', '樓上'];
+const $ = s => document.querySelector(s);
+const fmt = (v, d = 1) => v == null || isNaN(v) ? '—' : Number(v).toLocaleString('zh-TW', { maximumFractionDigits:d, minimumFractionDigits:d });
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+const n0 = v => v ?? null;
+const add = (a, b) => a == null && b == null ? null : (a || 0) + (b || 0);
+let snapshot = bundled, data, timer;
+
 async function loadDailySnapshot() {
   try {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 10000);
@@ -188,23 +215,21 @@ async function loadDailySnapshot() {
   } catch {}
 }
 
-const SHEET_ID = '1jhZCx9M8pv0hewr7k7Vrh0R_qrxpqztrH9mTusxYUhE';
-const FIREBASE = { apiKey:'AIzaSyBjQwfHCw1v6ZkW0w0M-zyo17ANAuFY1IU', authDomain:'html-tool-hub.firebaseapp.com', projectId:'html-tool-hub', appId:'1:42179940085:web:4e9cc9bd9b278abdf0ffbc' };
-const SCOPE = 'https://www.googleapis.com/auth/spreadsheets.readonly';
-const APPS = ['熱水器','咖啡機','飲水機','廚房熱水器','門口燈','除濕機'];
-const $ = s => document.querySelector(s);
-const fmt = (v, d = 1) => v == null || isNaN(v) ? '—' : Number(v).toLocaleString('zh-TW', { maximumFractionDigits:d, minimumFractionDigits:d });
-const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
-let data, timer;
-
-/* ---------- 資料轉換 ---------- */
+/* ---------- 資料轉換 ----------
+   daily 列：[0 日期,1 完整度,2 全屋購電,3 全屋售電,4 太陽能,5 一樓購電,6 樓上購電,7 平均W,8 尖峰W,9 狀態,10-15 電器,
+             16 一樓售電,17 樓上售電,18 一樓太陽能,19 樓上太陽能,20 一樓平均W,21 樓上平均W,22 一樓尖峰W,23 樓上尖峰W]
+   curve 列：[時間, 全屋負載, 全屋太陽能, 全屋市電, 一樓市電, 一樓太陽能, 樓上市電, 樓上太陽能] */
+const floorPoint = (grid, solar) => ({ grid:n0(grid), solar:n0(solar), load:grid == null ? null : add(grid, solar) });
 function fromSnapshot(s) {
-  const daily = s.daily.map(r => ({ date:r[0], complete:r[1], buy:r[2], sell:r[3], solar:r[4], buy1:r[5], buy2:r[6], avgW:r[7], maxW:r[8], status:r[9],
-    apps:Object.fromEntries(APPS.map((a, i) => [a, r[10 + i] ?? null])) }));
+  const daily = s.daily.map(r => ({ date:r[0], complete:r[1], buy:r[2], sell:r[3], solar:r[4], avgW:r[7], maxW:r[8], status:r[9],
+    apps:Object.fromEntries(APPS.map((a, i) => [a, n0(r[10 + i])])),
+    f:[{ buy:n0(r[5]), sell:n0(r[16]), solar:n0(r[18]), avgW:n0(r[20]), maxW:n0(r[22]) },
+       { buy:n0(r[6]), sell:n0(r[17]), solar:n0(r[19]), avgW:n0(r[21]), maxW:n0(r[23]) }] }));
   const year = s.generatedAt.slice(0, 4);
-  const curve = s.curve.map(r => ({ t:toMs(`${year}-${r[0]}`), load:r[1], solar:r[2], grid:r[3] }));
+  const curve = s.curve.map(r => ({ t:toMs(`${year}-${r[0]}`), load:r[1], solar:r[2], grid:r[3], f:[floorPoint(r[4], r[5]), floorPoint(r[6], r[7])] }));
   const L = s.latest;
-  return { mode:'snapshot', daily, curve, latest:{ ...L, appliances:L.appliances.map(([name, w, kwh]) => ({ name, w, kwh })) } };
+  return { mode:'snapshot', daily, curve, latest:{ ...L, appliances:L.appliances.map(([name, w, kwh]) => ({ name, w, kwh })),
+    f:[{ ...floorPoint(L.grid1W, L.solar1W), solarTime:L.growatt1Time }, { ...floorPoint(L.grid2W, L.solar2W), solarTime:L.growatt2Time }] } };
 }
 function toMs(text) {
   const m = String(text).match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})\D+(\d{1,2}):(\d{2})/);
@@ -215,24 +240,28 @@ function isoDate(text) { const m = String(text).match(/(\d{4})[-\/](\d{1,2})[-\/
 
 function fromSheets(dailyRows, snapRows) {
   const objs = rows => { const [h, ...rest] = rows; return rest.filter(r => r.some(c => c !== '')).map(r => Object.fromEntries(h.map((k, i) => [k, r[i] ?? '']))); };
+  const fl = (r, p) => ({ buy:num(r[p + '購電kWh']), sell:num(r[p + '售電kWh']), solar:num(r[p + '太陽能kWh']), avgW:num(r[p + '平均負載W']), maxW:num(r[p + '最大負載W']) });
   const daily = objs(dailyRows).map(r => ({ date:isoDate(r['日期']), complete:num(r['完整度%']), buy:num(r['全屋購電kWh']), sell:num(r['全屋售電kWh']), solar:num(r['太陽能發電kWh']),
-    buy1:num(r['一樓購電kWh']), buy2:num(r['樓上購電kWh']), avgW:num(r['平均負載W']), maxW:num(r['最大負載W']), status:r['彙總狀態'],
-    apps:Object.fromEntries(APPS.map(a => [a, num(r[a + '用電kWh'])])) })).sort((a, b) => a.date.localeCompare(b.date));
+    avgW:num(r['平均負載W']), maxW:num(r['最大負載W']), status:r['彙總狀態'],
+    apps:Object.fromEntries(APPS.map(a => [a, num(r[a + '用電kWh'])])), f:FLOORS.map(p => fl(r, p)) })).sort((a, b) => a.date.localeCompare(b.date));
   const snaps = objs(snapRows).map(r => ({ r, t:toMs(r['時段']) })).filter(x => !isNaN(x.t) && num(x.r['全屋負載W']) != null).sort((a, b) => a.t - b.t);
   if (!snaps.length) throw new Error('用電快照沒有可用資料。');
-  const last = snaps[snaps.length - 1];
-  const from = last.t - 48 * 3600e3, buckets = new Map();
+  const last = snaps[snaps.length - 1], from = last.t - 48 * 3600e3, buckets = new Map();
+  const cols = ['全屋負載W','全屋太陽能W','全屋市電W','一樓市電W','一樓太陽能W','樓上市電W','樓上太陽能W'];
   for (const { r, t } of snaps) {
     if (t <= from) continue;
-    const k = Math.floor(t / 900e3) * 900e3, b = buckets.get(k) || { load:[], solar:[], grid:[] };
-    for (const [key, col] of [['load','全屋負載W'],['solar','全屋太陽能W'],['grid','全屋市電W']]) { const v = num(r[col]); if (v != null) b[key].push(v); }
+    const k = Math.floor(t / 900e3) * 900e3, b = buckets.get(k) || cols.map(() => []);
+    cols.forEach((c, i) => { const v = num(r[c]); if (v != null) b[i].push(v); });
     buckets.set(k, b);
   }
   const avg = a => a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : null;
-  const curve = [...buckets].sort((a, b) => a[0] - b[0]).map(([t, b]) => ({ t, load:avg(b.load), solar:avg(b.solar), grid:avg(b.grid) }));
+  const curve = [...buckets].sort((a, b) => a[0] - b[0]).map(([t, b]) => { const v = b.map(avg);
+    return { t, load:v[0], solar:v[1], grid:v[2], f:[floorPoint(v[3], v[4]), floorPoint(v[5], v[6])] }; });
   const L = last.r;
   return { mode:'live', daily, curve, latest:{ time:L['時段'], status:L['資料狀態'], tuya:L['Tuya狀態'], growatt:L['Growatt狀態'], worker:L['Worker版本'], error:L['錯誤訊息'],
-    loadW:num(L['全屋負載W']), solarW:num(L['全屋太陽能W']), gridW:num(L['全屋市電W']), grid1W:num(L['一樓市電W']), grid2W:num(L['樓上市電W']),
+    loadW:num(L['全屋負載W']), solarW:num(L['全屋太陽能W']), gridW:num(L['全屋市電W']),
+    f:[{ ...floorPoint(num(L['一樓市電W']), num(L['一樓太陽能W'])), solarTime:L['Growatt一樓資料時間'] },
+       { ...floorPoint(num(L['樓上市電W']), num(L['樓上太陽能W'])), solarTime:L['Growatt樓上資料時間'] }],
     appliances:APPS.map(name => ({ name, w:num(L[name + '功率W']), kwh:num(L[name + '今日kWh']) })) } };
 }
 
@@ -251,7 +280,6 @@ async function firebase() {
 function savedToken() { try { const t = JSON.parse(sessionStorage.getItem('power-token') || 'null'); return t && t.exp > Date.now() + 60e3 ? t.token : null; } catch { return null; } }
 function saveToken(token) { try { sessionStorage.setItem('power-token', JSON.stringify({ token, exp:Date.now() + 55 * 60e3 })); } catch {} }
 function clearToken() { try { sessionStorage.removeItem('power-token'); } catch {} }
-
 async function signIn() {
   const { a, auth } = await firebase();
   const provider = new a.GoogleAuthProvider();
@@ -315,12 +343,15 @@ $('#disconnect').onclick = async () => {
 
 /* ---------- 畫面 ---------- */
 function statusClass(s) { return s === 'ok' ? 'ok' : s === 'partial' || s === 'stale' || s === 'sleep' ? 'warn' : 'bad'; }
+const gridLabel = g => g == null ? ['市電', 'mute'] : g < 0 ? ['售電中', 'ok'] : ['購電中', 'mute'];
+const stat = (k, v, u) => `<div class="fstat"><span class="k">${esc(k)}</span><span class="v num">${v}<small>${u}</small></span></div>`;
+
 function render() {
   const { daily, latest:L, mode } = data;
-  const today = daily[daily.length - 1] || {};
+  const today = daily[daily.length - 1] || { f:[{}, {}] };
   const month = today.date ? today.date.slice(0, 7) : '';
   const mDays = daily.filter(d => d.date.startsWith(month));
-  const mBuy = mDays.reduce((s, d) => s + (d.buy || 0), 0), mSolar = mDays.reduce((s, d) => s + (d.solar || 0), 0);
+  const sum = (arr, get) => arr.reduce((s, d) => s + (get(d) || 0), 0);
 
   $('#m-time').textContent = L.time ? String(L.time).replace(/^\d{4}[-\/]/, '') : '—';
   $('#m-mode').textContent = mode === 'live' ? '即時' : '快照';
@@ -329,36 +360,53 @@ function render() {
 
   const selling = L.gridW != null && L.gridW < 0;
   const kpis = [
-    ['全屋負載', fmt(L.loadW, 0), 'W', `一樓 ${fmt(L.grid1W, 0)} W · 樓上 ${fmt(L.grid2W, 0)} W（市電）`],
-    ['太陽能發電', fmt(L.solarW, 0), 'W', `Growatt：${L.growatt || '—'}`],
-    [selling ? '目前售電' : '目前購電', fmt(Math.abs(L.gridW ?? NaN), 0), 'W', selling ? '太陽能多於用電，回送市電' : '由台電市電供應'],
+    ['全屋負載', fmt(L.loadW, 0), 'W', `一樓 ${fmt(L.f[0].load, 0)} W · 樓上 ${fmt(L.f[1].load, 0)} W`],
+    ['全屋太陽能', fmt(L.solarW, 0), 'W', `Growatt：${L.growatt || '—'}`],
+    [selling ? '全屋售電' : '全屋購電', fmt(Math.abs(L.gridW ?? NaN), 0), 'W', selling ? '太陽能多於用電，回送市電' : '由台電市電供應'],
     ['今日購電', fmt(today.buy, 2), 'kWh', `${today.status || ''} · 完整度 ${fmt(today.complete, 1)}%`],
     ['今日太陽能', fmt(today.solar, 1), 'kWh', `售電 ${fmt(today.sell, 2)} kWh`],
-    [`${month.slice(5)} 月累計購電`, fmt(mBuy, 1), 'kWh', `${mDays.length} 天 · 太陽能 ${fmt(mSolar, 1)} kWh`]
+    [`${month.slice(5)} 月累計購電`, fmt(sum(mDays, d => d.buy), 1), 'kWh', `${mDays.length} 天 · 太陽能 ${fmt(sum(mDays, d => d.solar), 1)} kWh`]
   ];
   $('#kpis').innerHTML = kpis.map(([k, v, u, s]) => `<div class="kpi"><span class="label">${esc(k)}</span><span class="v num">${v}<small>${u}</small></span><span class="sub">${esc(s)}</span></div>`).join('');
+
+  FLOORS.forEach((name, i) => {
+    const now = L.f[i], td = today.f[i] || {}, [gl, gc] = gridLabel(now.grid);
+    const share = today.buy ? (td.buy || 0) / today.buy * 100 : null;
+    const mBuy = sum(mDays, d => d.f[i].buy), mSolar = sum(mDays, d => d.f[i].solar), mSell = sum(mDays, d => d.f[i].sell);
+    $(`#floor-${i}`).innerHTML = `
+      <div class="floor-head"><h3>${name}</h3><span class="dot ${gc}">${gl}</span></div>
+      <div class="fgroup"><span class="label">現在 · W</span><div class="fstats">
+        ${stat('負載', fmt(now.load, 0), 'W')}${stat('太陽能', fmt(now.solar, 0), 'W')}${stat(now.grid < 0 ? '售電' : '購電', fmt(Math.abs(now.grid ?? NaN), 0), 'W')}
+      </div></div>
+      <div class="fgroup"><span class="label">今日 · kWh</span><div class="fstats">
+        ${stat('購電', fmt(td.buy, 2), '')}${stat('太陽能', fmt(td.solar, 1), '')}${stat('售電', fmt(td.sell, 2), '')}
+      </div></div>
+      <div class="fgroup"><span class="label">${month.slice(5)} 月累計 · kWh</span><div class="fstats">
+        ${stat('購電', fmt(mBuy, 1), '')}${stat('太陽能', fmt(mSolar, 1), '')}${stat('售電', fmt(mSell, 1), '')}
+      </div></div>
+      <div class="share"><span>今日佔全屋購電 <b class="num">${fmt(share, 0)}%</b></span><div class="track"><div class="fill" style="width:${(share || 0).toFixed(1)}%"></div></div></div>
+      <p class="fnote">今日平均負載 ${fmt(td.avgW, 0)} W · 尖峰 ${fmt(td.maxW, 0)} W${now.solarTime ? ` · 太陽能資料 ${esc(String(now.solarTime).slice(5, 16))}` : ''}</p>`;
+  });
 
   const maxK = Math.max(0.1, ...L.appliances.map(a => a.kwh || 0));
   $('#apps').innerHTML = L.appliances.map(a => `<div class="app"><span>${esc(a.name)}</span><div class="track"><div class="fill" style="width:${((a.kwh || 0) / maxK * 100).toFixed(1)}%"></div></div>
     <span class="val num"><span class="${a.w > 5 ? 'on' : ''}">${a.w > 5 ? '運轉中 ' + fmt(a.w, 0) + ' W' : '待機'}</span> · ${fmt(a.kwh, 2)} kWh</span></div>`).join('');
 
-  const fTotal = (today.buy1 || 0) + (today.buy2 || 0) || 1;
-  $('#floors').innerHTML = [['一樓', today.buy1], ['樓上', today.buy2]].map(([n, v]) => `<div><div class="rowv"><span>${n}</span><span class="num">${fmt(v, 2)} kWh</span></div>
-    <div class="app" style="grid-template-columns:1fr"><div class="track"><div class="fill" style="width:${((v || 0) / fTotal * 100).toFixed(1)}%"></div></div></div></div>`).join('')
-    + `<p class="note">平均負載 ${fmt(today.avgW, 0)} W · 尖峰 ${fmt(today.maxW, 0)} W</p>`;
+  const fcols = d => d.f.map((f, i) => `<td class="${i ? '' : 'sep'}">${fmt(f.buy, 2)}</td><td>${fmt(f.sell, 2)}</td><td>${fmt(f.solar, 1)}</td><td>${fmt(f.maxW, 0)}</td>`).join('');
+  $('#table').innerHTML = `<thead><tr><th></th><th colspan="4" class="sep">一樓</th><th colspan="4">樓上</th><th colspan="3" class="sep">全屋</th><th></th></tr>
+    <tr><th>日期</th>${FLOORS.map((_, i) => `<th class="${i ? '' : 'sep'}">購電</th><th>售電</th><th>太陽能</th><th>尖峰W</th>`).join('')}<th class="sep">購電</th><th>太陽能</th><th>完整度</th><th>狀態</th></tr></thead><tbody>`
+    + daily.slice().reverse().map(d => `<tr><td>${d.date}</td>${fcols(d)}<td class="sep">${fmt(d.buy, 2)}</td><td>${fmt(d.solar, 1)}</td><td>${fmt(d.complete, 1)}%</td><td>${esc(d.status)}</td></tr>`).join('') + '</tbody>';
 
-  $('#table').innerHTML = `<thead><tr><th>日期</th><th>購電</th><th>售電</th><th>太陽能</th><th>一樓購電</th><th>樓上購電</th><th>平均W</th><th>尖峰W</th><th>完整度</th><th>狀態</th></tr></thead><tbody>`
-    + daily.slice().reverse().map(d => `<tr><td>${d.date}</td><td>${fmt(d.buy, 2)}</td><td>${fmt(d.sell, 2)}</td><td>${fmt(d.solar, 1)}</td><td>${fmt(d.buy1, 2)}</td><td>${fmt(d.buy2, 2)}</td><td>${fmt(d.avgW, 0)}</td><td>${fmt(d.maxW, 0)}</td><td>${fmt(d.complete, 1)}%</td><td>${esc(d.status)}</td></tr>`).join('') + '</tbody>';
-
-  $('#foot').textContent = mode === 'live'
+  $('#foot').textContent = (mode === 'live'
     ? `即時資料來自 Google 試算表「家庭管家_用電」。Worker ${L.worker || '—'} · Tuya ${L.tuya || '—'} · Growatt ${L.growatt || '—'}${L.error ? ' · 錯誤：' + L.error : ''}`
-    : `每日快照（${snapshot.generatedAt} 產生，每天 23:50 自動更新）。按「以 Google 連線即時資料」並用有試算表權限的帳號登入，即可讀取最新資料。`;
-  drawCurve(); drawDaily();
+    : `每日快照（${snapshot.generatedAt} 產生，每天 23:50 自動更新）。按「以 Google 連線即時資料」並用有試算表權限的帳號登入，即可讀取最新資料。`)
+    + ' 樓層負載＝該層市電＋該層太陽能；售電為負的市電。電器插座未標示樓層。';
+  drawCharts();
 }
 
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-function niceMax(v) { const p = Math.pow(10, Math.floor(Math.log10(v || 1))); return Math.ceil(v / p / (v / p > 5 ? 2 : 1)) * p * (v / p > 5 ? 2 : 1); }
-function frame(svg) { const w = svg.clientWidth || 600, h = svg.clientHeight || 280; svg.setAttribute('viewBox', `0 0 ${w} ${h}`); return { w, h, m:{ l:48, r:12, t:10, b:28 } }; }
+function niceMax(v) { const p = Math.pow(10, Math.floor(Math.log10(v || 1))); const s = v / p > 5 ? 2 : 1; return Math.ceil(v / p / s) * p * s; }
+function frame(svg) { const w = svg.clientWidth || 500, h = svg.clientHeight || 230; svg.setAttribute('viewBox', `0 0 ${w} ${h}`); return { w, h, m:{ l:44, r:10, t:10, b:26 } }; }
 function yAxis(w, h, m, max, unit) {
   let s = '';
   for (let i = 0; i <= 4; i++) { const v = max * i / 4, y = h - m.b - (h - m.t - m.b) * i / 4;
@@ -369,76 +417,86 @@ function yAxis(w, h, m, max, unit) {
 function placeTip(tip, panel, x, y) {
   tip.style.display = 'block';
   const pw = panel.clientWidth, tw = tip.offsetWidth;
-  tip.style.left = Math.min(Math.max(8, x + 14), pw - tw - 8) + 'px'; tip.style.top = Math.max(8, y - 10) + 'px';
+  tip.style.left = Math.min(Math.max(8, x + 14), pw - tw - 8) + 'px'; tip.style.top = Math.max(8, y) + 'px';
 }
-const rowHtml = (color, name, val) => `<div class="row"><span><i style="background:${color}"></i>${name}</span><span class="num">${val}</span></div>`;
+const rowHtml = (color, name, val) => `<div class="row"><span>${color ? `<i style="background:${color}"></i>` : ''}${name}</span><span class="num">${val}</span></div>`;
+const kW = v => v >= 1000 ? (v / 1000).toFixed(v % 1000 ? 1 : 0) + 'k' : String(Math.round(v));
 
-function drawCurve() {
-  const svg = $('#c-curve'), tip = $('#t-curve'), panel = $('#p-curve'), pts = data.curve.filter(p => p.load != null);
+function drawCharts() {
+  const pts = data.curve.filter(p => !isNaN(p.t));
+  const cMax = niceMax(Math.max(1, ...pts.flatMap(p => p.f.flatMap(f => [f.load || 0, f.solar || 0]))));
+  const dMax = niceMax(Math.max(1, ...data.daily.flatMap(d => d.f.flatMap(f => [f.buy || 0, f.solar || 0, f.sell || 0]))));
+  [0, 1].forEach(i => {
+    drawLine(i, pts.map(p => ({ t:p.t, ...p.f[i] })), cMax);
+    drawBars(i, data.daily.map(d => ({ date:d.date, status:d.status, ...d.f[i] })), dMax);
+  });
+}
+
+function drawLine(i, all, max) {
+  const svg = $(`#c-curve-${i}`), tip = $(`#t-curve-${i}`), panel = $(`#p-curve-${i}`), pts = all.filter(p => p.load != null);
   const { w, h, m } = frame(svg);
   if (!pts.length) { svg.innerHTML = `<text x="${w / 2}" y="${h / 2}" text-anchor="middle">沒有資料</text>`; return; }
-  const t0 = pts[0].t, t1 = pts[pts.length - 1].t, max = niceMax(Math.max(...pts.map(p => Math.max(p.load, p.solar || 0))));
+  const t0 = all[0].t, t1 = all[all.length - 1].t;
   const X = t => m.l + (w - m.l - m.r) * (t - t0) / Math.max(1, t1 - t0), Y = v => h - m.b - (h - m.t - m.b) * v / max;
   const path = key => { let d = '', prev; for (const p of pts) { if (p[key] == null) { prev = null; continue; } d += (prev && p.t - prev.t <= 45 * 60e3 ? 'L' : 'M') + X(p.t).toFixed(1) + ' ' + Y(p[key]).toFixed(1); prev = p; } return d; };
-  let s = yAxis(w, h, m, max, v => v >= 1000 ? (v / 1000).toFixed(v % 1000 ? 1 : 0) + 'k' : Math.round(v));
-  const step = (w < 500 ? 12 : 6) * 3600e3;
+  let s = yAxis(w, h, m, max, kW);
+  const step = (w < 420 ? 12 : 6) * 3600e3;
   for (let t = Math.ceil(t0 / step) * step; t <= t1; t += step) { const d = new Date(t);
     s += `<text x="${X(t)}" y="${h - 8}" text-anchor="middle">${d.getHours() === 0 ? (d.getMonth() + 1) + '/' + d.getDate() : String(d.getHours()).padStart(2, '0') + ':00'}</text>`; }
   s += `<path d="${path('solar')}" fill="none" stroke="${css('--s-solar')}" stroke-width="2" stroke-linejoin="round"/>`;
   s += `<path d="${path('load')}" fill="none" stroke="${css('--s-load')}" stroke-width="2" stroke-linejoin="round"/>`;
-  s += `<g id="cross" style="display:none"><line y1="${m.t}" y2="${h - m.b}" stroke="${css('--axis')}" stroke-dasharray="3 3"/>
+  s += `<g class="cross" style="display:none"><line y1="${m.t}" y2="${h - m.b}" stroke="${css('--axis')}" stroke-dasharray="3 3"/>
     <circle r="4.5" fill="${css('--s-load')}" stroke="${css('--panel')}" stroke-width="2" data-k="load"/><circle r="4.5" fill="${css('--s-solar')}" stroke="${css('--panel')}" stroke-width="2" data-k="solar"/></g>`;
-  s += `<rect x="${m.l}" y="${m.t}" width="${w - m.l - m.r}" height="${h - m.t - m.b}" fill="transparent" id="hit-curve"/>`;
+  s += `<rect class="hit" x="${m.l}" y="${m.t}" width="${w - m.l - m.r}" height="${h - m.t - m.b}" fill="transparent"/>`;
   svg.innerHTML = s;
-  const cross = svg.querySelector('#cross');
+  const cross = svg.querySelector('.cross'), line = cross.querySelector('line');
   const move = e => {
     const r = svg.getBoundingClientRect(), x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
     const t = t0 + (x - m.l) / (w - m.l - m.r) * (t1 - t0);
     let p = pts[0]; for (const q of pts) if (Math.abs(q.t - t) < Math.abs(p.t - t)) p = q;
-    cross.style.display = ''; cross.querySelector('line').setAttribute('x1', X(p.t)); cross.querySelector('line').setAttribute('x2', X(p.t));
+    cross.style.display = ''; line.setAttribute('x1', X(p.t)); line.setAttribute('x2', X(p.t));
     for (const c of cross.querySelectorAll('circle')) { const v = p[c.dataset.k]; c.style.display = v == null ? 'none' : ''; c.setAttribute('cx', X(p.t)); c.setAttribute('cy', Y(v || 0)); }
     const d = new Date(p.t);
-    tip.innerHTML = `<b>${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}</b>`
-      + rowHtml(css('--s-load'), '全屋負載', fmt(p.load, 0) + ' W') + rowHtml(css('--s-solar'), '太陽能', fmt(p.solar, 0) + ' W')
-      + `<div class="row"><span>${p.grid < 0 ? '售電' : '購電'}</span><span class="num">${fmt(Math.abs(p.grid ?? NaN), 0)} W</span></div>`;
-    placeTip(tip, panel, X(p.t) + svg.offsetLeft, svg.offsetTop + 20);
+    tip.innerHTML = `<b>${FLOORS[i]} · ${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}</b>`
+      + rowHtml(css('--s-load'), '負載', fmt(p.load, 0) + ' W') + rowHtml(css('--s-solar'), '太陽能', fmt(p.solar, 0) + ' W')
+      + rowHtml('', p.grid < 0 ? '售電' : '購電', fmt(Math.abs(p.grid ?? NaN), 0) + ' W');
+    placeTip(tip, panel, X(p.t) + svg.offsetLeft, svg.offsetTop + 10);
   };
-  const hit = svg.querySelector('#hit-curve');
-  hit.onmousemove = move; hit.ontouchstart = hit.ontouchmove = e => { move(e); };
+  const hit = svg.querySelector('.hit');
+  hit.onmousemove = move; hit.ontouchstart = hit.ontouchmove = move;
   hit.onmouseleave = () => { cross.style.display = 'none'; tip.style.display = 'none'; };
 }
 
 function roundTop(x, y, bw, bh) { const r = Math.min(4, bw / 2, bh); if (bh <= 0) return ''; return `M${x} ${y + bh}V${y + r}Q${x} ${y} ${x + r} ${y}H${x + bw - r}Q${x + bw} ${y} ${x + bw} ${y + r}V${y + bh}Z`; }
-function drawDaily() {
-  const svg = $('#c-daily'), tip = $('#t-daily'), panel = $('#p-daily'), days = data.daily;
+function drawBars(i, days, max) {
+  const svg = $(`#c-daily-${i}`), tip = $(`#t-daily-${i}`), panel = $(`#p-daily-${i}`);
   const { w, h, m } = frame(svg);
   const keys = [['buy', '--s-load', '購電'], ['solar', '--s-solar', '太陽能'], ['sell', '--s-sell', '售電']];
-  const max = niceMax(Math.max(1, ...days.flatMap(d => keys.map(([k]) => d[k] || 0))));
-  const band = (w - m.l - m.r) / days.length, gap = 2, bw = Math.max(2, (band * 0.78 - gap * 2) / 3);
+  const band = (w - m.l - m.r) / Math.max(1, days.length), gap = 2, bw = Math.max(1.5, (band * 0.8 - gap * 2) / 3);
   const Y = v => h - m.b - (h - m.t - m.b) * v / max;
   let s = yAxis(w, h, m, max, v => Math.round(v));
-  const every = Math.ceil(days.length / Math.max(1, Math.floor((w - m.l) / 48)));
-  days.forEach((d, i) => {
-    const x0 = m.l + band * i + (band - (bw * 3 + gap * 2)) / 2;
-    keys.forEach(([k, c], j) => { const v = d[k] || 0; s += `<path d="${roundTop(x0 + j * (bw + gap), Y(v), bw, h - m.b - Y(v))}" fill="${css(c)}" opacity="${d.status === '完整' ? 1 : .55}"/>`; });
-    if (i % every === 0 || i === days.length - 1) s += `<text x="${m.l + band * i + band / 2}" y="${h - 8}" text-anchor="middle">${+d.date.slice(5, 7)}/${+d.date.slice(8)}</text>`;
-    s += `<rect x="${m.l + band * i}" y="${m.t}" width="${band}" height="${h - m.t - m.b}" fill="transparent" data-i="${i}" class="hit"/>`;
+  const every = Math.ceil(days.length / Math.max(1, Math.floor((w - m.l) / 44)));
+  days.forEach((d, j) => {
+    const x0 = m.l + band * j + (band - (bw * 3 + gap * 2)) / 2;
+    keys.forEach(([k, c], q) => { const v = d[k] || 0; s += `<path d="${roundTop(x0 + q * (bw + gap), Y(v), bw, h - m.b - Y(v))}" fill="${css(c)}" opacity="${d.status === '完整' ? 1 : .55}"/>`; });
+    if (j % every === 0 || j === days.length - 1) s += `<text x="${m.l + band * j + band / 2}" y="${h - 8}" text-anchor="middle">${+d.date.slice(5, 7)}/${+d.date.slice(8)}</text>`;
+    s += `<rect x="${m.l + band * j}" y="${m.t}" width="${band}" height="${h - m.t - m.b}" fill="transparent" data-j="${j}" class="hit"/>`;
   });
   svg.innerHTML = s;
   const show = e => {
     const el = e.target.closest('.hit'); if (!el) return;
-    const d = days[+el.dataset.i];
+    const d = days[+el.dataset.j];
     svg.querySelectorAll('.hit').forEach(r => r.setAttribute('fill', 'transparent')); el.setAttribute('fill', css('--chip')); el.setAttribute('fill-opacity', '.5');
-    tip.innerHTML = `<b>${d.date}${d.status && d.status !== '完整' ? '（' + esc(d.status) + '）' : ''}</b>` + keys.map(([k, c, n]) => rowHtml(css(c), n, fmt(d[k], 2) + ' kWh')).join('')
-      + `<div class="row"><span>尖峰負載</span><span class="num">${fmt(d.maxW, 0)} W</span></div>`;
-    const x = +el.getAttribute('x') + band / 2; placeTip(tip, panel, x + svg.offsetLeft, m.t + svg.offsetTop + 20);
+    tip.innerHTML = `<b>${FLOORS[i]} · ${d.date}${d.status && d.status !== '完整' ? '（' + esc(d.status) + '）' : ''}</b>` + keys.map(([k, c, n]) => rowHtml(css(c), n, fmt(d[k], 2) + ' kWh')).join('')
+      + rowHtml('', '尖峰負載', fmt(d.maxW, 0) + ' W');
+    placeTip(tip, panel, +el.getAttribute('x') + band / 2 + svg.offsetLeft, svg.offsetTop + 10);
   };
   svg.onmousemove = show; svg.ontouchstart = show;
   svg.onmouseleave = () => { tip.style.display = 'none'; svg.querySelectorAll('.hit').forEach(r => r.setAttribute('fill', 'transparent')); };
 }
 
-let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawCurve(); drawDaily(); }, 150); });
-matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { drawCurve(); drawDaily(); });
+let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawCharts, 150); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', drawCharts);
 
 data = fromSnapshot(snapshot);
 render();

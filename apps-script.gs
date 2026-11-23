@@ -8,6 +8,10 @@ const DASH_TZ = 'Asia/Taipei';
 const DASH_SNAP_SHEET = '_儀表板快照';
 const DASH_APPS = ['熱水器', '咖啡機', '飲水機', '廚房熱水器', '門口燈', '除濕機'];
 const DASH_DAILY_DAYS = 120;
+// daily 第 16 欄起：各樓層欄位
+const DASH_FLOOR_DAILY = ['一樓售電kWh', '樓上售電kWh', '一樓太陽能kWh', '樓上太陽能kWh', '一樓平均負載W', '樓上平均負載W', '一樓最大負載W', '樓上最大負載W'];
+// curve：[時間, 全屋負載, 全屋太陽能, 全屋市電, 一樓市電, 一樓太陽能, 樓上市電, 樓上太陽能]
+const DASH_CURVE_COLS = ['全屋負載W', '全屋太陽能W', '全屋市電W', '一樓市電W', '一樓太陽能W', '樓上市電W', '樓上太陽能W'];
 
 function doGet() {
   const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DASH_SNAP_SHEET);
@@ -57,7 +61,8 @@ function dashBuildSnapshot_() {
     const date = m ? m[1] + '-' + dashPad_(m[2]) + '-' + dashPad_(m[3]) : String(r['日期']);
     return [date, dashNum_(r['完整度%']), dashNum_(r['全屋購電kWh']), dashNum_(r['全屋售電kWh']), dashNum_(r['太陽能發電kWh']),
       dashNum_(r['一樓購電kWh']), dashNum_(r['樓上購電kWh']), dashNum_(r['平均負載W']), dashNum_(r['最大負載W']), r['彙總狀態'],
-      ...DASH_APPS.map(a => dashNum_(r[a + '用電kWh']))];
+      ...DASH_APPS.map(a => dashNum_(r[a + '用電kWh'])),
+      ...DASH_FLOOR_DAILY.map(c => dashNum_(r[c]))];
   }).sort((a, b) => a[0] < b[0] ? -1 : 1).slice(-DASH_DAILY_DAYS);
 
   const snaps = dashReadTable_('用電快照', 900)
@@ -70,8 +75,8 @@ function dashBuildSnapshot_() {
   const buckets = new Map();
   snaps.filter(x => x.t.ms > lastMs - 48 * 3600e3).forEach(({ r, t }) => {
     const k = Math.floor(t.ms / 900e3) * 900e3;
-    const b = buckets.get(k) || [[], [], []];
-    ['全屋負載W', '全屋太陽能W', '全屋市電W'].forEach((c, i) => { const v = dashNum_(r[c]); if (v != null) b[i].push(v); });
+    const b = buckets.get(k) || DASH_CURVE_COLS.map(() => []);
+    DASH_CURVE_COLS.forEach((c, i) => { const v = dashNum_(r[c]); if (v != null) b[i].push(v); });
     buckets.set(k, b);
   });
   const avg = a => a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : null;
@@ -86,6 +91,8 @@ function dashBuildSnapshot_() {
       time: L['時段'], status: L['資料狀態'], tuya: L['Tuya狀態'], growatt: L['Growatt狀態'], worker: L['Worker版本'], error: L['錯誤訊息'],
       loadW: dashNum_(L['全屋負載W']), solarW: dashNum_(L['全屋太陽能W']), gridW: dashNum_(L['全屋市電W']),
       grid1W: dashNum_(L['一樓市電W']), grid2W: dashNum_(L['樓上市電W']),
+      solar1W: dashNum_(L['一樓太陽能W']), solar2W: dashNum_(L['樓上太陽能W']),
+      growatt1Time: L['Growatt一樓資料時間'], growatt2Time: L['Growatt樓上資料時間'],
       appliances: DASH_APPS.map(a => [a, dashNum_(L[a + '功率W']), dashNum_(L[a + '今日kWh'])])
     },
     daily, curve
