@@ -126,6 +126,14 @@
   th { font-weight:600; color:var(--muted); font-size:13px; }
   td { font-family:var(--font-num); font-variant-numeric:tabular-nums; }
   .note { font-size:13px; color:var(--muted); margin:0; }
+  dialog { width:min(480px, calc(100vw - 32px)); border:1px solid var(--line); border-radius:16px; background:var(--panel); color:var(--ink); padding:22px; }
+  dialog::backdrop { background:rgba(0,0,0,.55); }
+  dialog h3 { margin:0 0 8px; font-size:20px; }
+  dialog p { margin:0 0 14px; font-size:14px; color:var(--ink2); }
+  dialog label { display:block; font-size:14px; font-weight:700; margin-bottom:6px; }
+  dialog input { width:100%; font:inherit; font-size:16px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--panel2); color:var(--ink); }
+  dialog input:focus { outline:2px solid var(--accent); outline-offset:1px; }
+  .drow { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
   @media (max-width:860px) { .pair { grid-template-columns:1fr; } }
   @media (max-width:600px) {
     .panel { padding:14px 14px; border-radius:14px; }
@@ -156,7 +164,8 @@
   </div>
 
   <div class="bar">
-    <button id="connect" class="primary" type="button">以 Google 連線即時資料</button>
+    <button id="keybtn" class="primary" type="button">🔑 設定自動連線</button>
+    <button id="connect" type="button">以 Google 連線即時資料</button>
     <button id="refresh" type="button" hidden>重新整理</button>
     <button id="disconnect" type="button" hidden>中斷連線</button>
     <span id="msg" role="status" aria-live="polite">目前顯示離線快照。</span>
@@ -202,6 +211,20 @@
   <p class="note" id="foot"></p>
 </div>
 
+<dialog id="keydlg">
+  <form method="dialog" id="keyform">
+    <h3>設定自動連線</h3>
+    <p>貼上手機小工具使用的 Worker 金鑰（WIDGET_TOKEN）。金鑰只存在這台裝置的瀏覽器，不會上傳到 GitHub。設定後，打開儀表板就會自動讀取即時資料，每分鐘更新。</p>
+    <label for="keyinput">Worker 金鑰</label>
+    <input id="keyinput" type="password" autocomplete="off" spellcheck="false" placeholder="貼上金鑰">
+    <div class="drow">
+      <button value="save" class="primary">儲存並連線</button>
+      <button value="clear">清除這台裝置的金鑰</button>
+      <button value="cancel">取消</button>
+    </div>
+  </form>
+</dialog>
+
 <script type="module">
 import { snapshot as bundled } from './data.js';
 
@@ -217,7 +240,75 @@ const fmt = (v, d = 1) => v == null || isNaN(v) ? '—' : Number(v).toLocaleStri
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 const n0 = v => v ?? null;
 const add = (a, b) => a == null && b == null ? null : (a || 0) + (b || 0);
-let snapshot = bundled, data, timer;
+let snapshot = bundled, data, baseData, timer;
+
+/* ---------- 裝置金鑰：直接讀 Cloudflare Worker（與手機小工具相同來源） ---------- */
+const WORKER_URL = 'https://home-power-monitor.da199919.workers.dev/';
+const KEY_NAME = 'power-worker-key';
+const getKey = () => { try { return localStorage.getItem(KEY_NAME) || ''; } catch { return ''; } };
+const setKey = v => { try { v ? localStorage.setItem(KEY_NAME, v) : localStorage.removeItem(KEY_NAME); } catch {} };
+let workerRaw = null, wTimer = null;
+const pick = (...vals) => { for (const x of vals) { if (x === null || x === undefined || x === '') continue; const n = Number(x); if (Number.isFinite(n)) return n; } return null; };
+const pad2 = n => String(n).padStart(2, '0');
+const localStamp = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+
+function refreshView() { data = workerRaw ? mergeWorker(baseData, workerRaw) : baseData; render(); }
+
+function mergeWorker(base, raw) {
+  const T = [raw.firstFloor || {}, raw.upperFloors || {}], G = raw.growatt || {}, GF = [G.firstFloor || {}, G.upperFloors || {}];
+  const f = T.map((t, i) => {
+    const grid = pick(i ? t.powerW : t.gridPowerW, t.gridPowerW, t.powerW);
+    const solar = pick(GF[i].powerW, GF[i].pvPowerW);
+    return { ...floorPoint(grid, solar ?? 0), voltage:pick(t.voltageV), freq:pick(t.frequencyHz), solarTime:null,
+      today:{ buy:pick(t.todayEnergy?.importedKWh, t.todayImportedKWh), sell:pick(t.todayEnergy?.exportedKWh, t.todayExportedKWh),
+              solar:pick(GF[i].todayGenerationKWh, GF[i].todayEnergyKWh, GF[i].eToday) } };
+  });
+  const at = raw.updatedAt ? new Date(raw.updatedAt) : new Date();
+  const sumOf = k => f.every(x => x[k] == null) ? null : f.reduce((s, x) => s + (x[k] || 0), 0);
+  const age = pick(G.cacheAgeSec, G.ageSec);
+  const latest = { ...base.latest, time:localStamp(isNaN(at) ? new Date() : at), status:'ok', tuya:'ok',
+    growatt: age != null ? `快取 ${Math.round(age)} 秒` : (base.latest.growatt || '—'),
+    loadW:sumOf('load'), solarW:sumOf('solar'), gridW:pick(raw.netPowerW) ?? sumOf('grid'), f };
+  // 今日：用 Worker 的今日度數覆蓋（快照最後一天不是今天就新增一列）
+  const todayStr = localStamp(new Date()).slice(0, 10);
+  const daily = base.daily.slice();
+  let row = daily[daily.length - 1];
+  row = row && row.date === todayStr ? { ...row, f:row.f.map(x => ({ ...x })) } : { date:todayStr, complete:null, status:'即時', apps:{}, f:[{}, {}] };
+  if (daily.length && daily[daily.length - 1].date === todayStr) daily[daily.length - 1] = row; else daily.push(row);
+  f.forEach((x, i) => { for (const k of ['buy', 'sell', 'solar']) if (x.today[k] != null) row.f[i][k] = x.today[k]; });
+  for (const k of ['buy', 'sell', 'solar']) if (row.f.some(x => x[k] != null)) row[k] = row.f.reduce((s, x) => s + (x[k] || 0), 0);
+  row.status = '即時';
+  return { ...base, mode:'worker', daily, latest };
+}
+
+async function pollWorker() {
+  const key = getKey();
+  if (!key) { workerRaw = null; clearInterval(wTimer); wTimer = null; refreshView(); return; }
+  try {
+    const r = await fetch(WORKER_URL, { headers:{ 'x-widget-token':key }, cache:'no-store' });
+    if (r.status === 401) { clearInterval(wTimer); wTimer = null; workerRaw = null; refreshView(); $('#msg').textContent = '自動連線失敗：金鑰不正確，請按「🔑 自動連線」重新設定。'; return; }
+    if (!r.ok) throw new Error(`Worker 回應 ${r.status}`);
+    const raw = await r.json();
+    if (raw.error) throw new Error(raw.error);
+    workerRaw = raw; refreshView();
+    $('#msg').textContent = `已自動連線（裝置金鑰），每分鐘更新 · 最後讀取 ${new Date().toLocaleTimeString('zh-TW', { hour12:false })}`;
+    if (!wTimer) wTimer = setInterval(pollWorker, 60e3);
+  } catch (e) {
+    $('#msg').textContent = `自動連線暫時讀不到：${e.message}（1 分鐘後重試）`;
+    if (!wTimer) wTimer = setInterval(pollWorker, 60e3);
+  }
+}
+
+const keydlg = $('#keydlg');
+$('#keybtn').onclick = () => { $('#keyinput').value = ''; keydlg.showModal(); $('#keyinput').focus(); };
+keydlg.addEventListener('close', () => {
+  const act = keydlg.returnValue, v = $('#keyinput').value.trim();
+  $('#keyinput').value = '';
+  if (act === 'save' && v) { setKey(v); $('#msg').textContent = '連線中…'; pollWorker(); }
+  if (act === 'clear') { setKey(''); pollWorker(); $('#msg').textContent = '已清除這台裝置的金鑰。'; }
+  updateKeyBtn();
+});
+function updateKeyBtn() { const has = !!getKey(); $('#keybtn').textContent = has ? '🔑 自動連線：已設定' : '🔑 設定自動連線'; $('#keybtn').classList.toggle('primary', !has); }
 
 async function loadDailySnapshot() {
   try {
@@ -329,8 +420,8 @@ async function goLive(interactive) {
     let token = savedToken();
     if (!token) { if (!interactive) return; msg.textContent = '請在彈出視窗選擇有權限的 Google 帳號…'; token = await signIn(); }
     msg.textContent = '讀取 Google 試算表中…';
-    data = await loadLive(token);
-    render();
+    baseData = await loadLive(token);
+    refreshView();
     msg.textContent = `已連線即時資料，每 5 分鐘自動更新（最後讀取 ${new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' })}）。`;
     $('#connect').hidden = true; $('#refresh').hidden = false; $('#disconnect').hidden = false;
     clearInterval(timer); timer = setInterval(() => goLive(false), 5 * 60e3);
@@ -349,7 +440,7 @@ $('#refresh').onclick = () => goLive(false).then(() => { if (!savedToken()) goLi
 $('#disconnect').onclick = async () => {
   clearInterval(timer); clearToken();
   try { const { a, auth } = await firebase(); await a.signOut(auth); } catch {}
-  data = fromSnapshot(snapshot); render();
+  baseData = fromSnapshot(snapshot); refreshView();
   $('#connect').hidden = false; $('#refresh').hidden = true; $('#disconnect').hidden = true;
   $('#msg').textContent = `已中斷連線，目前顯示每日快照（${snapshot.generatedAt}）。`;
 };
@@ -387,7 +478,7 @@ function render() {
   const monthLabel = `${+month.slice(5) || ''} 月`;
 
   $('#m-time').textContent = L.time ? String(L.time).replace(/^\d{4}[-\/]/, '') : '—';
-  $('#m-mode').innerHTML = mode === 'live' ? '<span class="dot ok">即時</span>' : '<span class="dot mute">快照</span>';
+  $('#m-mode').innerHTML = mode === 'worker' ? '<span class="dot ok">即時 · 自動連線</span>' : mode === 'live' ? '<span class="dot ok">即時 · Google</span>' : '<span class="dot mute">快照</span>';
   $('#m-status').innerHTML = `<span class="dot ${statusClass(L.status)}">擷取 ${esc(L.status || '—')}</span>`;
 
   // 全屋
@@ -412,7 +503,7 @@ function render() {
     const share = today.buy ? (td.buy || 0) / today.buy * 100 : null;
     const sell = now.grid != null && now.grid < 0;
     $(`#floor-${i}`).innerHTML = `
-      <div class="ehead"><h3>${FNAME[i][0]}<small>${FNAME[i][1]}</small></h3><div class="right"><span class="tag">今日自給 <b class="num">${fmt(selfRate(td), 0)}%</b></span></div></div>
+      <div class="ehead"><h3>${FNAME[i][0]}<small>${FNAME[i][1]}</small></h3><div class="right">${now.voltage != null ? `<span class="tag num">${fmt(now.voltage, 1)} V${now.freq != null ? ` · ${fmt(now.freq, 2)} Hz` : ''}</span>` : ''}<span class="tag">今日自給 <b class="num">${fmt(selfRate(td), 0)}%</b></span></div></div>
       <div class="big3">
         ${bigHtml('☀️', '發電', pw(now.solar), 'c-solar')}
         ${bigHtml('🏠', '用電', pw(now.load), 'c-load')}
@@ -432,7 +523,9 @@ function render() {
     <tr><th>日期</th>${FLOORS.map((_, i) => `<th class="${i ? '' : 'sep'}">買電</th><th>賣電</th><th>發電</th><th>尖峰W</th>`).join('')}<th class="sep">買電</th><th>發電</th><th>完整度</th><th>狀態</th></tr></thead><tbody>`
     + daily.slice().reverse().map(d => `<tr><td>${d.date}</td>${fcols(d)}<td class="sep">${fmt(d.buy, 2)}</td><td>${fmt(d.solar, 1)}</td><td>${fmt(d.complete, 1)}%</td><td>${esc(d.status)}</td></tr>`).join('') + '</tbody>';
 
-  $('#foot').textContent = (mode === 'live'
+  $('#foot').textContent = (mode === 'worker'
+    ? `「現在」與今日度數直接來自 Cloudflare Worker（與手機小工具相同），每分鐘更新；曲線、每日圖表與電器取自${baseData.mode === 'live' ? ' Google 試算表' : `每日快照（${snapshot.generatedAt}）`}。Growatt ${L.growatt || '—'}`
+    : mode === 'live'
     ? `即時資料來自 Google 試算表「家庭管家_用電」。Worker ${L.worker || '—'} · Tuya ${L.tuya || '—'} · Growatt ${L.growatt || '—'}${L.error ? ' · 錯誤：' + L.error : ''}`
     : `每日快照（${snapshot.generatedAt} 產生，每天 23:50 自動更新）。按「以 Google 連線即時資料」並用有試算表權限的帳號登入，即可讀取最新資料。`)
     + ' 用電＝買電＋發電−賣電；自給率＝自用的太陽能÷用電。電器插座未標示樓層。';
@@ -533,11 +626,13 @@ function drawBars(i, days, max) {
 let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawCharts, 150); });
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', drawCharts);
 
-data = fromSnapshot(snapshot);
-render();
+baseData = fromSnapshot(snapshot);
+refreshView();
+updateKeyBtn();
+if (getKey()) pollWorker();
 if (savedToken()) goLive(false);
 loadDailySnapshot().then(() => {
-  if (snapshot !== bundled && data.mode !== 'live') { data = fromSnapshot(snapshot); render(); $('#msg').textContent = `目前顯示每日快照（${snapshot.generatedAt}）。`; }
+  if (snapshot !== bundled && baseData.mode !== 'live') { baseData = fromSnapshot(snapshot); refreshView(); if (!workerRaw && !getKey()) $('#msg').textContent = `目前顯示每日快照（${snapshot.generatedAt}）。`; }
 });
 </script>
 </body>
